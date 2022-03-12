@@ -1,66 +1,117 @@
 <template>
-    <div class="hello">
-        <h1>{{ msg }}</h1>
-        <p>
-            For a guide and recipes on how to configure / customize this project,<br>
-            check out the
-            <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.
-        </p>
-        <h3>Installed CLI Plugins</h3>
-        <ul>
-            <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-babel" target="_blank"
-                   rel="noopener">babel</a></li>
-            <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-router" target="_blank"
-                   rel="noopener">router</a></li>
-            <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-vuex" target="_blank"
-                   rel="noopener">vuex</a></li>
-        </ul>
-        <h3>Essential Links</h3>
-        <ul>
-            <li><a href="https://vuejs.org" target="_blank" rel="noopener">Core Docs</a></li>
-            <li><a href="https://forum.vuejs.org" target="_blank" rel="noopener">Forum</a></li>
-            <li><a href="https://chat.vuejs.org" target="_blank" rel="noopener">Community Chat</a></li>
-            <li><a href="https://twitter.com/vuejs" target="_blank" rel="noopener">Twitter</a></li>
-            <li><a href="https://news.vuejs.org" target="_blank" rel="noopener">News</a></li>
-        </ul>
-        <h3>Ecosystem</h3>
-        <ul>
-            <li><a href="https://router.vuejs.org" target="_blank" rel="noopener">vue-router</a></li>
-            <li><a href="https://vuex.vuejs.org" target="_blank" rel="noopener">vuex</a></li>
-            <li><a href="https://github.com/vuejs/vue-devtools#vue-devtools" target="_blank"
-                   rel="noopener">vue-devtools</a></li>
-            <li><a href="https://vue-loader.vuejs.org" target="_blank" rel="noopener">vue-loader</a></li>
-            <li><a href="https://github.com/vuejs/awesome-vue" target="_blank" rel="noopener">awesome-vue</a></li>
-        </ul>
+    <div>
+
+        <el-container>
+            <el-header>
+                <img class="mlogo" src="https://www.markerhub.com/dist/images/logo/markerhub-logo.png" alt="">
+            </el-header>
+            <el-main>
+                <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px" class="demo-ruleForm">
+                    <el-form-item label="用户名" prop="username">
+                        <el-input v-model="ruleForm.username"></el-input>
+                    </el-form-item>
+                    <el-form-item label="密码" prop="password">
+                        <el-input type="password" v-model="ruleForm.password"></el-input>
+                    </el-form-item>
+
+                    <el-form-item>
+                        <el-button type="primary" @click="submitForm('ruleForm')">立即创建</el-button>
+                        <el-button @click="resetForm(ruleForm)">重置</el-button>
+                    </el-form-item>
+                </el-form>
+
+            </el-main>
+        </el-container>
+
     </div>
 </template>
 
 <script>
     export default {
-        name: 'HelloWorld',
-        props: {
-            msg: String
+        name: "Login",
+        data() {
+            return {
+                ruleForm: {
+                    username: 'admin',
+                    password: 'xuhexiang2002'
+                },
+                rules: {
+                    username: [
+                        { required: true, message: '请输入用户名', trigger: 'blur' },
+                        { min: 3, max: 15, message: '长度在 3 到 15 个字符', trigger: 'blur' }
+                    ],
+                    password: [
+                        { required: true, message: '请选择密码', trigger: 'change' }
+                    ]
+                }
+            };
+        },
+        methods: {
+            submitForm(formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        const _this = this
+                        console.log(this.$axios)
+                        this.$axios.post('/userinfo/login', this.ruleForm).then(res => {
+                            console.log(res.data)
+                            const jwt = res.headers['authorization']
+                            const userInfo = res.data.data
+                            // 把数据共享出去
+                            _this.$store.commit("SET_TOKEN", jwt)
+                            _this.$store.commit("SET_USERINFO", userInfo)
+                            // 获取
+                            console.log(_this.$store.getters.getUser)
+                            _this.$router.push("/blogs")
+                        })
+                    }
+                    else {
+                        console.log('error submit!!');
+                        return false;
+                    }
+                });
+            },
+            resetForm(formName) {
+                this.$refs[formName].resetFields();
+            }
         }
     }
 </script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-    h3 {
-        margin: 40px 0 0;
+    .el-header, .el-footer {
+        background-color: #B3C0D1;
+        color: #333;
+        text-align: center;
+        line-height: 60px;
     }
-
-    ul {
-        list-style-type: none;
-        padding: 0;
+    .el-aside {
+        background-color: #D3DCE6;
+        color: #333;
+        text-align: center;
+        line-height: 200px;
     }
-
-    li {
-        display: inline-block;
-        margin: 0 10px;
+    .el-main {
+        /*background-color: #E9EEF3;*/
+        color: #333;
+        text-align: center;
+        line-height: 160px;
     }
-
-    a {
-        color: #42b983;
+    body > .el-container {
+        margin-bottom: 40px;
+    }
+    .el-container:nth-child(5) .el-aside,
+    .el-container:nth-child(6) .el-aside {
+        line-height: 260px;
+    }
+    .el-container:nth-child(7) .el-aside {
+        line-height: 320px;
+    }
+    .mlogo {
+        height: 60%;
+        margin-top: 10px;
+    }
+    .demo-ruleForm {
+        max-width: 500px;
+        margin: 0 auto;
     }
 </style>
