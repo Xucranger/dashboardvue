@@ -12,7 +12,7 @@
             makeUP_val: {
                 type: Number,
                 default: () => {
-                    return 6;
+                    return 9;
                 }
             },
             elid: {
@@ -28,6 +28,12 @@
         },
         data() {
             return {}
+        },
+        watch:{
+            makeUP_val(newVal,oldVal){
+                console.log(newVal)
+                this.makeUpEcharts(this.elid,newVal)
+            }
         },
         methods: {
 

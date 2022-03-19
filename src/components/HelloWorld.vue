@@ -27,13 +27,16 @@
 </template>
 
 <script>
+
+    import {getUsersApi} from "@/utils/api";
+
     export default {
         name: "Login",
         data() {
             return {
                 ruleForm: {
-                    username: 'admin',
-                    password: 'xuhexiang2002'
+                    username: '',
+                    password: ''
                 },
                 rules: {
                     username: [
@@ -46,26 +49,33 @@
                 }
             };
         },
+        mounted() {
+
+        },
         methods: {
             submitForm(formName) {
                 this.$refs[formName].validate((valid) => {
                     if (valid) {
                         const _this = this
-                        console.log(this.$axios)
-                        this.$axios.post('/userinfo/login', this.ruleForm).then(res => {
-                            console.log(res.data)
+                        getUsersApi(this.ruleForm).then(res => {
                             const jwt = res.headers['authorization']
-                            const userInfo = res.data.data
-                            // 把数据共享出去
-                            _this.$store.commit("SET_TOKEN", jwt)
-                            _this.$store.commit("SET_USERINFO", userInfo)
-                            // 获取
-                            console.log(_this.$store.getters.getUser)
-                            _this.$router.push("/blogs")
+                            if(res.data.code=="200"){
+                                const userInfo = res.data.data
+                                console.log(userInfo)
+                                // 把数据共享出去
+                                _this.$store.commit("SET_TOKEN", jwt)
+                                _this.$store.commit("SET_USERINFO", userInfo)
+                                // 获取
+                                _this.$router.push("/overview")
+                            }
+                            else{
+                                alert(res.data.msg)
+                            }
+
                         })
                     }
                     else {
-                        console.log('error submit!!');
+                        alert('error submit!!');
                         return false;
                     }
                 });

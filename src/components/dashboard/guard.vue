@@ -4,6 +4,7 @@
             <el-collapse-item :name="1">
                 <template #title>
                     <div class="title">
+
                         守护进程
                     </div>
                 </template>
@@ -27,37 +28,25 @@
                             <el-table-column label="状态" width="180px">
                                 <template #default="scope">
                                     <div style="display: flex; align-items: center">
-                                        <span style="margin-left: 10px">{{ scope.row.status }}</span>
+<!--                                        <span style="margin-left: 10px">{{ scope.row.status }}</span>-->
+                                        <span class="status" style="color: #00aa88" v-if="scope.row.status=='start'">在线</span>
+                                        <span class="status" style="color: #de790a" v-if="scope.row.status=='rebooting'" >重启中</span>
+                                        <span class="status" style="color: #d40303" v-if="scope.row.status=='close'">离线</span>
+
                                     </div>
                                 </template>
                             </el-table-column>
                             <el-table-column label="操作">
                                 <template #default="scope">
                                     <el-button size="small" type="primary"
-                                               @click="handleRestart(scope.$index, scope.row)">重启
+                                               @click="mntReboot(scope.row.mntname)" v-if="scope.row.status!='rebooting'">重启
+                                    </el-button>
+                                    <el-button size="small" type="primary"
+                                               @click="mntReboot(scope.row.mntname)" v-if="scope.row.status=='rebooting'" disabled>重启中  <el-icon style="margin-left:5px " class="load"><Loading/></el-icon>
                                     </el-button>
                                 </template>
                             </el-table-column>
                         </el-table>
-
-                        <!--                        <el-row type="flex" align="middle">-->
-                        <!--                            <el-col :span="12" style="position: relative">-->
-                        <!--                                <span  class="left">-->
-                        <!--                                    <el-icon color="#00aa88" style="vertical-align: middle" ><Compass/></el-icon>-->
-                        <!--                                    <text style="vertical-align: middle;padding-left: 20px;font-size: 20px">工作中</text>-->
-                        <!--                                </span>-->
-                        <!--                                <el-divider direction="vertical" style="float: right;position: absolute;height: 60%;right: 0;top: 20%"></el-divider>-->
-                        <!--                            </el-col>-->
-
-                        <!--                            <el-col :span="12">-->
-                        <!--                                <div  style="float: left;">-->
-                        <!--                                    <text style="text-align: center;font-size: 13px;padding:0 20px;">操作</text>-->
-                        <!--                                    <el-icon  color="#00aa88" style="font-size: 13px;display: inline-block;padding-left: 40px;vertical-align: middle"><Compass /></el-icon>-->
-                        <!--                                    <text style="text-align: center;font-size: 13px;color: #545c64;">重启</text>-->
-                        <!--                                </div>-->
-                        <!--                            </el-col>-->
-                        <!--                        </el-row>-->
-
                     </div>
                 </div>
             </el-collapse-item>
@@ -66,21 +55,27 @@
 </template>
 
 <script>
+    import {Loading} from "@element-plus/icons"
     export default {
         name: "guard",
+        methods:{
+          mntReboot(mntname){
+              console.log(mntname)
+              this.changeMntStatus(mntname,"rebooting")
+          }
+        },
+        components:{
+            Loading
+        },
+        inject:["changeMntStatus"],
+        props:{
+            tableData: {
+                type: Array,
+            },
+        },
         data() {
             return {
                 activeNames: 1,
-                tableData: [{
-                    name: '人脸识别网站',
-                    status: '在线'
-                }, {
-                    name: '摄像头',
-                    status: '在线'
-                }, {
-                    name: '盖章模块',
-                    status: '在线'
-                }]
             }
         }
     }
@@ -126,4 +121,17 @@
         --el-table-tr-bg-color: #f2f2f2;
         --el-table-row-bg-color: #ffffff;
     }
+    .status{
+        margin-left: 10px;
+        font-size: 10px;
+    }
+    .load{
+        animation:fadenum 5s infinite;
+    }
+    @keyframes fadenum{
+
+        100%{transform:rotate(360deg);}
+
+    }
+
 </style>

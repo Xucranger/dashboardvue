@@ -1,12 +1,18 @@
-import {createRouter, createWebHistory} from 'vue-router'
+import {createRouter, createWebHistory,Router} from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import Login from "@/views/Login";
 import SiderBar from "@/components/SiderBar";
-
+import TerminalDetail from "@/components/TerminalDetail";
+import demo from "@/components/echarts/demo";
+import board from "@/components/dashboard/board";
+import OverView from "@/components/OverView";
+import xterm from "@/components/dashboard/xterm";
+import {overlayEmits} from "element-plus";
 const routes = [
     {
         path: '/',
         name: 'home',
-        component: HomeView
+        component: Login
     },
     {
         path: '/about',
@@ -22,9 +28,30 @@ const routes = [
         component: SiderBar
     },
     {
+        path: '/terminaldetail',
+        name: 'terminaldetail',
+        component: TerminalDetail
+    },
+    {
         path: '/demo',
         name: 'demo',
-        component: () => import('../components/echarts/demo')
+        component: () => import('../components/dashboard/xterm')
+    },
+    {
+        path: '/dashboard/:id',
+        component: TerminalDetail,
+        children: [
+            {path: '', component:board},
+            {path: 'webssh',name: 'webssh', component: xterm},
+
+            ]
+    },
+    {
+        path: '/overview',
+        component: TerminalDetail,
+        children: [
+            {path: '',component: OverView}
+            ]
     }
 ]
 
@@ -32,5 +59,4 @@ const router = createRouter({
     history: createWebHistory(process.env.BASE_URL),
     routes
 })
-
 export default router

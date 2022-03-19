@@ -1,9 +1,10 @@
 <template>
-    <el-container>
+    <el-container v-loading="loading">
         <el-header class="head">
             <h2 align="left">
                 机器仪表盘
-                远程连接
+                <el-button class="button-bar" type="text"  @click="this.$router.push({name:'webssh',params:this.tmninfo})">远程连接</el-button>
+
             </h2>
         </el-header>
         <el-main class="main">
@@ -21,7 +22,6 @@
                                             机器信息
                                         </text>
                                     </div>
-
                                     <el-button class="button" type="text">操作按钮</el-button>
                                 </div>
                             </template>
@@ -56,7 +56,7 @@
                                                 CPU占比
                                             </template>
                                             <div style="">
-                                                <mycircle make-u-p_val=89 elid="echart1" id="echart1"
+                                                <mycircle :make-u-p_val="this.result.cpu_usage" elid="echart1" id="echart1"
                                                           style="margin: 0 auto"></mycircle>
                                             </div>
                                         </el-card>
@@ -67,7 +67,7 @@
                                                 内存占比
                                             </template>
                                             <div>
-                                                <mycircle make-u-p_val=6 elid="echart2" id="echart2"
+                                                <mycircle :makeUP_val="this.result.mem_usage" elid="echart2" id="echart2"
                                                           style="margin: 0 auto"></mycircle>
                                             </div>
                                         </el-card>
@@ -103,7 +103,7 @@
                                                 </text>
                                                 <el-icon color="#00aa88"
                                                          style="font-size: 13px;display: inline-block;vertical-align: middle;padding-left: 40px">
-                                                    <Compass/>
+                                                    <Monitor/>
                                                 </el-icon>
                                                 <text style="text-align: center;font-size: 13px;color: #545c64;vertical-align: middle">
                                                     监控中
@@ -135,10 +135,10 @@
                                 <br>
                             </div>
                             <div class="content">
-                                <guard style="padding-bottom: 15px"></guard>
-                                <process process="人脸识别网页" style="padding-bottom: 15px"></process>
-                                <process process="盖章模块" style="padding-bottom: 15px"></process>
-                                <process process="人脸识别模块" style="padding-bottom: 15px"></process>
+                                <guard style="padding-bottom: 15px" :table-data="mntData"></guard>
+                                <process processname="人脸识别网页" style="padding-bottom: 15px" :process-status="this.result.web" ></process>
+                                <process processname="盖章模块" style="padding-bottom: 15px" :process-status="this.result.stamp"></process>
+                                <process processname="人脸识别模块" style="padding-bottom: 15px" :process-status="this.result.camera"></process>
                             </div>
                         </div>
                     </el-card>
@@ -155,17 +155,23 @@
         UploadFilled,
         Stopwatch,
         SuccessFilled,
-        Compass
+        Compass,
+        Monitor
     } from '@element-plus/icons'
     import mycircle from "@/components/echarts/circle";
     import process from "@/components/dashboard/process";
     import guard from "@/components/dashboard/guard";
+    import {getTmndetail} from "@/utils/api"
     import * as echarts from 'echarts/lib/echarts';
-
+    import {WSSHClient} from "../../../public/webssh"
+    import {Terminal} from "xterm"
+    import "xterm/dist/xterm.css"
     export default {
         name: "board",
         data() {
             return {
+                client : new WSSHClient(),
+                loading: true,
                 tableData: [
                     {
                         name: 'ID',
@@ -187,7 +193,23 @@
                         name: '已注册人数',
                         info: '657',
                     }
-                ]
+                ],
+                mntData:'',
+                tmninfo:'',
+                result:'',
+                cmdmatch: [{
+                    name: "人脸识别网页",
+                    cmd: "python /opt/web_restart.py\n",
+                    status: "web"
+                },{
+                    name: "盖章模块",
+                    cmd: "python 111\n",
+                    status: "stamp"
+                },{
+                    name: "人脸识别模块",
+                    cmd: "python 222\n",
+                    status: "camera"
+                }]
             }
 
         },
@@ -199,22 +221,165 @@
             SuccessFilled,
             mycircle,
             process,
-            guard
+            guard,
+            Monitor,
+            getTmndetail,
+            Terminal,
+            WSSHClient
         },
         mounted() {
-
+            this.getTmninfo();
+        },
+        provide() {
+          return {
+              changeStatus:this.changeStatus,
+              changeMntStatus:this.changeMntStatus
+          }
+        },
+        watch: { //通过watch来监听路由变化
+            $route: function(){
+                this.getTmninfo();
+            },
         },
         methods: {
-            // demo(){
-            //     var canvas = document.getElementById("echart");
-            //     var context = canvas.getContext("2d");
-            //     context.rect(0,0,50,50);
-            //     context.clip();
-            // }
+            //改变监控模块状态
+            changeMntStatus(param,status){
+                console.log(param)
+                var cmdmatch = this.mntData
+                for(var i=0;i<cmdmatch.length;i++){
+                    if(cmdmatch[i].mntname==param){
+                        var matched = cmdmatch[i]
+                        if(status=="rebooting"){
+                            console.log(this.client)
+                            this.client.sendClientData(matched.cmd);
+                        }
+                        this.mntData[i]["status"] = status;
+                    }
+                }
+
+            },
+            //改变模块状态
+            changeStatus(param,status){
+                console.log(param)
+                var cmdmatch = this.cmdmatch
+                for(var i=0;i<cmdmatch.length;i++){
+                    if(cmdmatch[i].name==param){
+                        var matched = cmdmatch[i]
+                        if(status=="rebooting"){
+                            console.log(this.client)
+                            this.client.sendClientData(matched.cmd);
+                        }
+                        this.result[matched.status] = status
+                    }
+                }
+            },
+            //获取终端信息
+            getTmninfo(){
+                const _this = this
+                var ID = this.$route.params;
+                var tablelist = this.tableData;
+                if(ID){
+                    getTmndetail(ID).then(res=>{
+
+                        if(res.data.code="200"){
+                            _this.tmninfo=res.data.data
+
+                            for(var i=0;i<tablelist.length;i++){
+                                if(tablelist[i].name=="ID"){
+                                    tablelist[i].info=res.data.data.id
+                                }
+                                if(tablelist[i].name=="名称"){
+                                    tablelist[i].info=res.data.data.name
+                                }
+                                if(tablelist[i].name=="描述"){
+                                    tablelist[i].info=res.data.data.describe
+                                }
+                                if(tablelist[i].name=="区域"){
+                                    tablelist[i].info=res.data.data.area
+                                }
+                                if(tablelist[i].name=="已注册人数"){
+                                    tablelist[i].info=res.data.data.regnum
+                                }
+                            }
+                            this.getDetail();
+                        }
+                        else{
+                            alert(res.data.msg)
+                        }
+                    })
+                }
+            },
+            //获得运行信息
+            getDetail(){
+                var client = this.client
+                var isready = 0;
+                const _this = this;
+                this.result = '';
+                this.mntData = '';
+                client.connect({
+                    onError: function (error) {
+                        //连接失败回调
+                        console.log('Error: ' + error + '\r\n');
+                    },
+                    onConnect: function () {
+                        console.log(_this.tmninfo)
+                        var options = {
+                            operate: 'connect',
+                            host: _this.tmninfo.ip,//IP
+                            port: '22',//端口号
+                            username: _this.tmninfo.username,//用户名
+                            password: _this.tmninfo.password //密码
+                        };
+                        client.sendInitData(options);
+                    },
+                    onData: function (data) {
+                        //收到数据时回调
+                        isready = isready + 1;
+                        if (isready == 1) {
+                            //获取初始内容：内存占比etc..
+                            var message = 'python /opt/demo.py\n';
+                            client.sendClientData(message);
+                            _this.loading = false;
+                        }
+                        console.log(data)
+                        data = data.split("\r");
+                        //收到result
+                        if (data[0].match('{')) {
+                            _this.result = JSON.parse(data[0]);
+                            _this.mntData = JSON.parse(data[0]).mntData;
+                        }
+                        //收到重启成功回复!
+                        if (data[0].match('restart success')) {
+                            var recmsg = data[0].split('-');
+                            if(recmsg[0].match('mnt')){
+                                var name = recmsg[0];
+                                for(var i=0;i<_this.mntData.length;i++){
+                                    if(_this.mntData[i].mntname==name){
+                                        _this.changeMntStatus(name,"start")
+                                    }
+                                }
+                            }
+                            else {
+                                var name = recmsg[0];
+                                for(var i=0;i<_this.cmdmatch.length;i++){
+                                    if(_this.cmdmatch[i].status==name){
+                                        name=_this.cmdmatch[i].name
+                                        _this.changeStatus(name,"start")
+
+                                    }
+                                }
+                            }
+
+                        }
+                    },
+                    onClose: function () {
+                        //连接关闭回调
+                        console.log("\rconnection closed");
+                    }
+                })
+            }
         }
     }
-
-
 </script>
 
 <style scoped>
@@ -264,7 +429,9 @@
     /deep/ .el-divider--vertical {
         margin: 0 8px;
     }
-
+    /deep/ .el-button--text{
+        color: #a0a5ab;
+    }
     .mytable_row > td {
         border: none;
     }
