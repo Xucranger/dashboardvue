@@ -52,7 +52,7 @@
     </div>
 </template>
 
-<script setup lang="js">
+<script>
     import {
         Location,
         Document,
@@ -65,7 +65,7 @@
     import {getTmnsApi} from "@/utils/api";
 
     export default {
-        name: "SiderBar.vue",
+        // name: "SiderBar.vue",
         props:{
             isCollapse: {
               type: Boolean,

@@ -24,7 +24,7 @@
     </div>
 </template>
 
-<script setup lang="js">
+<script>
     import {
         Location,
         Document,
@@ -38,7 +38,7 @@
     import myheader  from "@/components/dashboard/myheader";
     import SiderBar from "@/components/SiderBar";
     export default {
-        name: "SiderBar.vue",
+        // name: "SiderBar.vue",
         components: {
             Location,
             Document,

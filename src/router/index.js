@@ -1,4 +1,4 @@
-import {createRouter, createWebHistory,Router} from 'vue-router'
+import {createRouter, createWebHashHistory,Router} from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import Login from "@/views/Login";
 import SiderBar from "@/components/SiderBar";
@@ -25,17 +25,17 @@ const routes = [
     {
         path: '/SiderBar',
         name: 'SiderBar',
-        component: SiderBar
+        component: () => import('../components/SiderBar')
     },
     {
         path: '/terminaldetail',
         name: 'terminaldetail',
-        component: TerminalDetail
+        component: () => import(/* webpackChunkName: "about" */ '../components/TerminalDetail')
     },
     {
         path: '/demo',
         name: 'demo',
-        component: () => import('../components/dashboard/xterm')
+        component: () => import('../components/Demo')
     },
     {
         path: '/dashboard/:id',
@@ -50,13 +50,24 @@ const routes = [
         path: '/overview',
         component: TerminalDetail,
         children: [
-            {path: '',component: OverView}
+            {path: '',component: OverView},
+            {path: '/demo',component: xterm}
             ]
     }
 ]
 
+
 const router = createRouter({
-    history: createWebHistory(process.env.BASE_URL),
+    history: createWebHashHistory(process.env.BASE_URL),
     routes
 })
+/* 全局导航守卫 */
+router.beforeEach((to, from, next) => {
+    if (to.matched.length === 0) {  // 如果未匹配到路由
+        from.name ? next({ name: from.name }) : next('/')
+    } else {
+        next()  // 如果匹配到正确跳转
+    }
+})
+
 export default router

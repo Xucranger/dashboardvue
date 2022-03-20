@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const baseURL = 'http://localhost:8081'
+const baseURL = 'http://152.136.113.191:8081'
 // 创建 axios 实例
 const service = axios.create({
     baseURL: baseURL, // 请求地址前缀，将自动加在 url 前面

@@ -213,6 +213,7 @@
             myprogress
         },
         mounted() {
+            console.log("111")
         },
         watch:{
         },
